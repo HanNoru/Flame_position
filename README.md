@@ -1,5 +1,5 @@
 # Flame_position
-read several images, and figure out where the flame is, and make it to a graph.
+read several images, and figure out where the flame is, and make it to a graph. with python
 
 
 In my research i took several pictures of flame with Ch-filtered camera. And the pictures are whiteblack.
