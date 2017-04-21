@@ -1,0 +1,122 @@
+#the program for my research.
+#started from 170225 165412
+
+import os
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+import numpy as np
+from PIL import Image
+import glob
+
+midline_y = 204
+# midline_y = int(input('midline_y: '))
+start_time = 0.0
+fps = 125.0
+# fps = float(input('fps: '))
+mm_for_512pixel = 17.0
+# mm_for_512pixel = float(input('mm_for_512pixel: '))
+time_gap = 1.0/fps
+image_pixel_x = 501
+image_pixel_y = 501
+image_list = []
+time = []
+final_time = []
+located_pixel = []
+located_mm = []
+file_pass = '/170314/'
+save_name = 'Tr40_12_C001S0001'
+
+for filename in glob.glob('/Users/noru/ResearchData/Photo' + file_pass + save_name + '/*.tif'):
+    im = Image.open(filename)
+    image_list.append(im)
+
+def l_value_getter(imagename):
+    l_value = []
+    pix = imagename.load()
+    for xxx in range(0, image_pixel_x):
+        l_value.append(pix[xxx, midline_y])
+    return l_value
+
+def list_cutter_x(value_list):
+    cutted_x = []
+    progress_x = 0
+    for item01 in value_list:
+        if item01 >= max(value_list)/5.0:
+            cutted_x.append(progress_x)
+        progress_x += 1
+        if cutted_x != [] and item01 < max(value_list)/5.0:
+            break
+    return cutted_x
+
+def list_cutter_y(value_list):
+    cutted_y = []
+    for item01 in value_list:
+        if item01 >= max(value_list)/5.0:
+            cutted_y.append(item01)
+        if cutted_y != [] and item01 < max(value_list)/5.0:
+            break
+    return cutted_y
+
+
+def gaussian_fit(list01, list02):
+    array01 = np.asarray(list01)
+    array02 = np.asarray(list02)
+    mean = sum(array01 * array02) / sum(array02)
+    sigma = np.sqrt(sum(array02 * (array01 - mean)**2) / sum(array02))
+    def Gauss(x, a, x0, sigma):
+        return a * np.exp(-(x - x0)**2 / (2 * sigma**2))
+    popt,pcov = curve_fit(Gauss, array01, array02, p0=[max(array02), mean, sigma])
+    x_fine = np.linspace(list01[0], list01[-1], 1000)
+    y_fine = Gauss(x_fine, *popt)
+    ymax = np.argmax(y_fine)
+    xmax = x_fine[ymax]
+    return xmax
+
+
+for flame_image in image_list:
+    if 7 < len(list_cutter_x(l_value_getter(flame_image))) < image_pixel_x/6:
+        now_pixel = gaussian_fit((list_cutter_x(l_value_getter(flame_image))), list_cutter_y(l_value_getter(flame_image)))
+        located_pixel.append(now_pixel)
+        located_mm.append((512-now_pixel) * (mm_for_512pixel / 512.0))
+        time.append(start_time)
+    start_time += time_gap
+
+first_time = time[0]
+
+for time_things in time:
+    time_cal = time_things - first_time
+    final_time.append(time_cal)
+
+for things in final_time:
+    print (things)
+
+print ('\n' * 10)
+
+for final_things in located_pixel:
+    print (final_things)
+
+
+
+file1 = open('/Users/noru/Desktop/Research/Data/Graph/Nowinprocess/' + save_name + '_Time.txt', 'w+')
+for item001 in final_time:
+  file1.write(str(item001) + '\n')
+file1.close()
+file2 = open('/Users/noru/Desktop/Research/Data/Graph/Nowinprocess/'+ save_name + '_Position.txt', 'w+')
+for item002 in located_mm:
+  file2.write(str(item002) + '\n')
+file2.close()
+
+for opened in image_list:
+    opened.close()
+
+
+
+
+
+
+
+
+
+
+
+
